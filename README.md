@@ -24,3 +24,12 @@ The Vitest runner uses its own `@vitest/mocker` / `@vitest/spy` 4.x. Storybook d
 
 - `mockObject` in `dist/mocking-utils/mocker-runtime.js` replaces every array property with `[]`, even in spy mode. Vitest 4 copies arrays when spying.
 - The spy calls the original implementation with `.apply(this, args)` even when called with `new`. This happens in two places: `mockCall` (bundled `@vitest/spy`) and `listenWhenCalled` (Storybook's own wrapper), both in `dist/test/index.js` and `dist/preview/runtime.js`.
+
+## Fix
+
+`patches/storybook@10.6.2.patch` (applied through `pnpm-workspace.yaml`) makes those three spots match Vitest 4. With it, `pnpm check:build` passes. To see the bug again, check out the previous commit, or remove `patchedDependencies` and run `pnpm install`.
+
+- Arrays: use `[]` only for full mocking (`options.type === "automock"`), and copy the array in spy mode. (Vitest 4 also spies on objects inside the array. This patch only copies it.)
+- `mockCall` and `listenWhenCalled`: when `new.target` is set, use `Reflect.construct(impl, args, new.target)`.
+
+Bumping the bundled `@vitest/mocker` / `@vitest/spy` to 4.x would fix both too, but Vitest 4's spy changes are breaking for `fn()` / `spyOn()` users (mock names, `restoreAllMocks`, `invocationCallOrder`, and arrow implementations called with `new` now throw). This patch only changes spy-mode arrays and calls made with `new`.

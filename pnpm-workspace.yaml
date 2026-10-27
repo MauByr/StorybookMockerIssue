@@ -1,0 +1,2 @@
+patchedDependencies:
+  storybook@10.6.2: patches/storybook@10.6.2.patch

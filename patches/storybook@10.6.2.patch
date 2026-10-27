@@ -1,0 +1,61 @@
+diff --git a/dist/mocking-utils/mocker-runtime.js b/dist/mocking-utils/mocker-runtime.js
+index 137b11867b17ed0a459e32575672baae5fe90609..e95c37fc2e8cef21f185555d1f67a5c868eb95e2 100644
+--- a/dist/mocking-utils/mocker-runtime.js
++++ b/dist/mocking-utils/mocker-runtime.js
+@@ -171,7 +171,7 @@ function mockObject(options, object, mockExports = {}) {
+       }
+       let type = getType(value);
+       if (Array.isArray(value)) {
+-        define(newContainer, property, []);
++        define(newContainer, property, options.type === "automock" ? [] : [...value]);
+         continue;
+       }
+       let isFunction = type.includes("Function") && typeof value == "function";
+diff --git a/dist/preview/runtime.js b/dist/preview/runtime.js
+index 3c4762f6e8f334fddf3e97c1cfb79b7a05779308..aa3b68b8048b5af3640d27da09023e1cad0c8dce 100644
+--- a/dist/preview/runtime.js
++++ b/dist/preview/runtime.js
+@@ -23392,8 +23392,8 @@ function enhanceSpy(spy) {
+     }
+   };
+   function mockCall(...args) {
+-    return instances2.push(this), contexts.push(this), invocations.push(++callOrder), (implementationChangedTemporarily ? implementation : onceImplementations.shift() || implementation || state3.getOriginal() || (() => {
+-    })).apply(this, args);
++    return instances2.push(this), contexts.push(this), invocations.push(++callOrder), ((impl) => new.target ? Reflect.construct(impl, args, new.target) : impl.apply(this, args))(implementationChangedTemporarily ? implementation : onceImplementations.shift() || implementation || state3.getOriginal() || (() => {
++    }));
+   }
+   let name = stub.name;
+   stub.getMockName = () => name || "vi.fn()", stub.mockName = (n3) => (name = n3, stub), stub.mockClear = () => (state3.reset(), instances2 = [], contexts = [], invocations = [], stub), stub.mockReset = () => (stub.mockClear(), implementation = void 0, onceImplementations = [], stub), stub.mockRestore = () => (stub.mockReset(), state3.restore(), stub), Symbol.dispose && (stub[Symbol.dispose] = () => stub.mockRestore()), stub.getMockImplementation = () => implementationChangedTemporarily ? implementation : onceImplementations.at(0) || implementation, stub.mockImplementation = (fn3) => (implementation = fn3, state3.willCall(mockCall), stub), stub.mockImplementationOnce = (fn3) => (onceImplementations.push(fn3), stub);
+@@ -24659,7 +24659,7 @@ function reactiveMock(mock) {
+ function listenWhenCalled(mock) {
+   let state3 = T(mock), impl = state3.impl;
+   return state3.willCall(function(...args) {
+-    return listeners.forEach((listener) => listener(mock, args)), impl?.apply(this, args);
++    return listeners.forEach((listener) => listener(mock, args)), new.target ? Reflect.construct(impl, args, new.target) : impl?.apply(this, args);
+   }), mock;
+ }
+ function clearAllMocks() {
+diff --git a/dist/test/index.js b/dist/test/index.js
+index f37296f408ae7faec248d25181e23223bd1f79cf..b601773ba0ba4fc393b24026fd622b4d3a15acb5 100644
+--- a/dist/test/index.js
++++ b/dist/test/index.js
+@@ -12550,8 +12550,8 @@ function enhanceSpy(spy) {
+     }
+   };
+   function mockCall(...args) {
+-    return instances.push(this), contexts.push(this), invocations.push(++callOrder), (implementationChangedTemporarily ? implementation : onceImplementations.shift() || implementation || state.getOriginal() || (() => {
+-    })).apply(this, args);
++    return instances.push(this), contexts.push(this), invocations.push(++callOrder), ((impl) => new.target ? Reflect.construct(impl, args, new.target) : impl.apply(this, args))(implementationChangedTemporarily ? implementation : onceImplementations.shift() || implementation || state.getOriginal() || (() => {
++    }));
+   }
+   let name = stub.name;
+   stub.getMockName = () => name || "vi.fn()", stub.mockName = (n) => (name = n, stub), stub.mockClear = () => (state.reset(), instances = [], contexts = [], invocations = [], stub), stub.mockReset = () => (stub.mockClear(), implementation = void 0, onceImplementations = [], stub), stub.mockRestore = () => (stub.mockReset(), state.restore(), stub), Symbol.dispose && (stub[Symbol.dispose] = () => stub.mockRestore()), stub.getMockImplementation = () => implementationChangedTemporarily ? implementation : onceImplementations.at(0) || implementation, stub.mockImplementation = (fn3) => (implementation = fn3, state.willCall(mockCall), stub), stub.mockImplementationOnce = (fn3) => (onceImplementations.push(fn3), stub);
+@@ -13817,7 +13817,7 @@ function reactiveMock(mock) {
+ function listenWhenCalled(mock) {
+   let state = T(mock), impl = state.impl;
+   return state.willCall(function(...args) {
+-    return listeners.forEach((listener) => listener(mock, args)), impl?.apply(this, args);
++    return listeners.forEach((listener) => listener(mock, args)), new.target ? Reflect.construct(impl, args, new.target) : impl?.apply(this, args);
+   }), mock;
+ }
+ function clearAllMocks() {
