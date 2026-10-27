@@ -1,0 +1,4 @@
+node_modules
+storybook-static
+.vitest-attachments
+__screenshots__
